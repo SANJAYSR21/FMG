@@ -602,14 +602,70 @@ $(function(){
     });
 
     $('#generateReport').on('click', function(){
-      let csv = 'Date,User,Action,Details\n';
-      compliance.forEach(r => { csv += [r.date, r.user, '"'+r.action+'"', '"'+r.details+'"'].join(',') + '\n'; });
-      const blob = new Blob([csv], {type: 'text/csv'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = 'compliance_report.csv';
-      document.body.appendChild(a); a.click(); a.remove();
-      URL.revokeObjectURL(url);
+      // Export compliance report as PDF using jsPDF (client-side)
+      try{
+        // Build simple text lines for the PDF
+        const lines = [];
+        lines.push('Compliance Report');
+        lines.push('');
+        lines.push(['Date', 'User', 'Action', 'Details'].join(' | '));
+        lines.push('----------------------------------------');
+        compliance.forEach(r => {
+          // ensure strings and remove newlines
+          const date = (r.date || '').toString().replace(/\n/g,' ');
+          const user = (r.user || '').toString().replace(/\n/g,' ');
+          const action = (r.action || '').toString().replace(/\n/g,' ');
+          const details = (r.details || '').toString().replace(/\n/g,' ');
+          lines.push([date, user, action, details].join(' | '));
+        });
+
+        // Use jsPDF if available
+        if(window.jspdf && window.jspdf.jsPDF){
+          const { jsPDF } = window.jspdf;
+          const doc = new jsPDF({unit: 'pt', format: 'a4'});
+          const pageWidth = doc.internal.pageSize.getWidth();
+          const margin = 40;
+          let y = 40;
+          const lineHeight = 12;
+          doc.setFontSize(12);
+          // wrap lines if too long
+          lines.forEach((ln, i) => {
+            const splitted = doc.splitTextToSize(ln, pageWidth - margin * 2);
+            doc.text(splitted, margin, y);
+            y += (splitted.length * lineHeight) + 6;
+            if(y > doc.internal.pageSize.getHeight() - 60){ doc.addPage(); y = 40; }
+          });
+          doc.save('compliance_report.pdf');
+        } else if(window.jsPDF){
+          // older global
+          const doc = new window.jsPDF('p','pt','a4');
+          const pageWidth = doc.internal.pageSize.getWidth();
+          const margin = 40;
+          let y = 40;
+          const lineHeight = 12;
+          doc.setFontSize(12);
+          lines.forEach((ln)=>{
+            const splitted = doc.splitTextToSize(ln, pageWidth - margin * 2);
+            doc.text(splitted, margin, y);
+            y += (splitted.length * lineHeight) + 6;
+            if(y > doc.internal.pageSize.getHeight() - 60){ doc.addPage(); y = 40; }
+          });
+          doc.save('compliance_report.pdf');
+        } else {
+          // Fallback: create a printable window and let user print to PDF
+          let html = '<html><head><title>Compliance Report</title></head><body><h2>Compliance Report</h2><pre>' +
+            compliance.map(r => [r.date, r.user, r.action, r.details].join(' | ')).join('\n') +
+            '</pre></body></html>';
+          const w = window.open('', '_blank');
+          w.document.write(html);
+          w.document.close();
+          w.focus();
+          showToast('No PDF library found — opened printable view. Use Print -> Save as PDF.', 'warning');
+        }
+      }catch(err){
+        console.error('generateReport error', err);
+        showToast('Failed to generate PDF report', 'danger');
+      }
     });
   }
 

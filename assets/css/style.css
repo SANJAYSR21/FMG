@@ -33,7 +33,10 @@ main { flex: 1 0 auto; }
   padding: 24px; background: linear-gradient(90deg, rgba(13,110,253,0.08), rgba(111,66,203,0.06));
 }
 .brand { display:flex; align-items:center; gap:.75rem; }
-.brand .logo { width:40px; height:40px; border-radius:8px; background: linear-gradient(135deg,#0d6efd,#6f42c1); box-shadow: 0 6px 18px rgba(13,110,253,0.18); }
+.brand .logo { width:48px; height:48px; border-radius:8px; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.brand .logo img { width:48px; height:48px; display:block; }
+.nav-logo { width:28px; height:28px; vertical-align:middle; }
+.site-logo { width:56px; height:56px; }
 .brand h4 { margin:0; font-weight:600; }
 .login-body { padding: 22px; background-color: #fff; }
 .dark-mode .login-body { background-color: transparent; }
