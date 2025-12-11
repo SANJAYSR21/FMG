@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FCLMS - Contract Management</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="assets/css/style.css" rel="stylesheet">
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="dashboard.html">FCLMS</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="mainNav">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item"><a class="nav-link active" href="contract_management.html">Contract Management</a></li>
+          <li class="nav-item"><a class="nav-link" href="approval_workflow.html">Approval Workflow</a></li>
+          <li class="nav-item"><a class="nav-link" href="compliance_audit.html">Compliance &amp; Audit</a></li>
+          <li class="nav-item"><a class="nav-link" href="renewal_alerts.html">Renewal Alerts</a></li>
+          <li class="nav-item"><a class="nav-link" href="operations.html">Operations</a></li>
+          <li class="nav-item"><a class="nav-link" href="user_profile.html">User Profile</a></li>
+        </ul>
+        <span class="navbar-text me-3" id="navUser">Welcome</span>
+        <button id="darkModeToggle" class="btn btn-outline-light btn-sm ms-2" title="Toggle dark mode">🌙</button>
+        <a class="btn btn-outline-light btn-sm ms-2" href="index.html">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container my-4">
+    <div class="contracts-hero">
+      <div>
+        <h3>Contract Management</h3>
+        <p class="small text-muted">Create, edit and review contracts. Users can submit requests.</p>
+      </div>
+      <div class="contract-actions">
+        <div class="btn-group" role="group">
+          <button class="btn btn-outline-secondary" id="exportContracts">Export</button>
+          <button class="btn btn-success" id="createContractBtn">Create Contract</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="d-flex toolbar">
+          <input type="text" id="contractSearch" class="form-control search-input" placeholder="Filter by contract number or client name">
+          <select id="statusFilter" class="form-select filter-select">
+            <option value="">All statuses</option>
+            <option>Active</option>
+            <option>Pending</option>
+            <option>Expired</option>
+            <option>Requested</option>
+          </select>
+          <div class="ms-auto">
+            <a href="contract_management.html" class="btn btn-outline-primary">Refresh</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover contract-table" id="contractsTable">
+            <thead>
+              <tr>
+                <th>Contract</th>
+                <th>Client</th>
+                <th>Start</th>
+                <th>End</th>
+                <th>Status</th>
+                <th>Requested By</th>
+                <th>Version</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- rows injected by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <!-- User-only: Create Contract Request (visible only to role 'User') -->
+    <div id="userRequestSection" class="card mt-4" style="display:none;">
+      <div class="card-body">
+        <h5>Create Contract Request</h5>
+        <form id="requestForm">
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="form-label">User ID</label>
+              <input class="form-control" id="r_userid" readonly>
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Start Date</label>
+              <input type="date" class="form-control" id="r_start" required>
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label">End Date</label>
+              <input type="date" class="form-control" id="r_end" required>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Description</label>
+            <textarea class="form-control" id="r_description" rows="3" required></textarea>
+          </div>
+          <div>
+            <button class="btn btn-primary" type="submit">Submit Request</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <!-- Create/Edit Modal -->
+  <div class="modal fade" id="contractModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="contractModalLabel">Create Contract</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="contractForm">
+          <div class="modal-body">
+            <input type="hidden" id="contractIndex">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Contract Number</label>
+                <input class="form-control" id="c_number" required>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Client Name</label>
+                <input class="form-control" id="c_client" required>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Start Date</label>
+                <input type="date" class="form-control" id="c_start" required>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">End Date</label>
+                <input type="date" class="form-control" id="c_end" required>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Status</label>
+                <select class="form-select" id="c_status">
+                  <option>Active</option>
+                  <option>Pending</option>
+                  <option>Expired</option>
+                </select>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Version</label>
+                <input class="form-control" id="c_version" value="1.0">
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Notes</label>
+              <textarea id="c_notes" class="form-control" rows="3"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- View Details Modal -->
+  <div class="modal fade" id="viewModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Contract Details</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="viewBody">
+          <!-- injected -->
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="bg-light py-3 mt-auto border-top">
+    <div class="container text-center small">© Demo Freight Contract LMS</div>
+  </footer>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>

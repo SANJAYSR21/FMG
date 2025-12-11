@@ -1,0 +1,141 @@
+/* Simple custom styles for the demo UI */
+body { min-height: 100vh; display: flex; flex-direction: column; }
+main { flex: 1 0 auto; }
+.card .display-6 { margin:0; }
+#contractsTable td, #contractsTable th { vertical-align: middle; }
+@media (max-width: 576px) {
+  .card .display-6 { font-size: 1.5rem; }
+}
+
+/* Login page styles */
+.login-bg {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(1200px 400px at 10% 20%, rgba(99,102,241,0.12), transparent),
+              linear-gradient(135deg, #eef2ff 0%, #e6f4ff 50%, #ffffff 100%);
+}
+.dark-mode .login-bg {
+  background: radial-gradient(1200px 400px at 10% 20%, rgba(16,24,40,0.4), transparent),
+              linear-gradient(135deg, #07101a 0%, #081826 50%, #07101a 100%);
+}
+.login-card {
+  width: 100%;
+  max-width: 440px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(11,23,34,0.08);
+  border: 1px solid rgba(11,23,34,0.04);
+}
+.dark-mode .login-card { box-shadow: 0 18px 36px rgba(0,0,0,0.6); border-color: rgba(255,255,255,0.04); }
+.login-header {
+  padding: 24px; background: linear-gradient(90deg, rgba(13,110,253,0.08), rgba(111,66,203,0.06));
+}
+.brand { display:flex; align-items:center; gap:.75rem; }
+.brand .logo { width:40px; height:40px; border-radius:8px; background: linear-gradient(135deg,#0d6efd,#6f42c1); box-shadow: 0 6px 18px rgba(13,110,253,0.18); }
+.brand h4 { margin:0; font-weight:600; }
+.login-body { padding: 22px; background-color: #fff; }
+.dark-mode .login-body { background-color: transparent; }
+.login-footer { padding: 14px 22px; background-color: #fbfdff; text-align:center; font-size:0.85rem; }
+.dark-mode .login-footer { background-color: transparent; color:#9fb6c9; }
+.form-control:focus { box-shadow: 0 8px 20px rgba(13,110,253,0.08); border-color: #0d6efd; }
+.btn-gradient {
+  background: linear-gradient(90deg,#0d6efd,#6f42c1);
+  color: #fff; border: 0; box-shadow: 0 8px 20px rgba(99,102,241,0.14);
+}
+.small-note { font-size:0.85rem; color:#6c757d; }
+.dark-mode .small-note { color:#a8c2d6; }
+
+@media (max-width: 480px){
+  .login-card { margin: 24px; }
+}
+
+/* Contract Management styles */
+.contracts-hero {
+  display:flex; align-items:center; justify-content:space-between; gap:1rem;
+  padding:1.25rem; border-radius:.6rem; margin-bottom:1rem;
+  background: linear-gradient(90deg, rgba(13,110,253,0.06), rgba(111,66,203,0.04));
+}
+.dark-mode .contracts-hero { background: linear-gradient(90deg,#07101a 0%, #07101a 100%); }
+.contracts-hero h3 { margin:0; }
+.contracts-hero p { margin:0; color:#6c757d; }
+.toolbar { display:flex; gap:.75rem; flex-wrap:wrap; align-items:center; }
+.search-input { min-width: 240px; max-width: 420px; }
+.filter-select { min-width: 160px; }
+.contract-actions .btn { min-width:110px; }
+.contract-table thead th { background: transparent; border-bottom: 2px solid rgba(0,0,0,0.04); }
+.contract-table tbody tr:hover { background: rgba(13,110,253,0.02); }
+.badge-status-Active { background-color: #198754; }
+.badge-status-Pending { background-color: #ffc107; color:#212529; }
+.badge-status-Expired { background-color: #6c757d; }
+.badge-status-Requested { background-color: #0d6efd; }
+.badge-status-Draft { background-color: #6f42c1; }
+.action-btns .btn { margin-right: 6px; }
+.user-request-card { margin-top: 1rem; }
+
+@media (max-width: 576px){
+  .contracts-hero { flex-direction:column; align-items:flex-start; }
+  .toolbar { width:100%; }
+  .search-input { width:100%; }
+}
+
+/* Dark mode styles */
+.dark-mode {
+  background-color: #0f1720;
+  color: #e6eef8;
+}
+.dark-mode .card {
+  background-color: #0b1220;
+  border-color: #213040;
+  color: #e6eef8;
+}
+.dark-mode .navbar, .dark-mode .footer, .dark-mode footer {
+  background-color: #07101a !important;
+}
+.dark-mode .navbar .nav-link, .dark-mode .navbar .navbar-text, .dark-mode .navbar .navbar-brand {
+  color: #d8e6f3 !important;
+}
+.dark-mode .table, .dark-mode .table th, .dark-mode .table td {
+  background-color: transparent;
+  color: #d8e6f3;
+  border-color: #213040;
+}
+.dark-mode .list-group-item {
+  background-color: #07101a;
+  border-color: #213040;
+  color: #d8e6f3;
+}
+.dark-mode .btn-outline-light {
+  color: #d8e6f3;
+  border-color: #33516b;
+}
+.dark-mode .btn-primary { background-color: #1f6f8b; border-color:#1f6f8b; }
+.dark-mode .form-control, .dark-mode .form-select, .dark-mode textarea {
+  background-color: #07101a; color: #d8e6f3; border-color:#213040;
+}
+/* small toggle fixed for index page (if present) */
+#darkModeToggleFixed { position: fixed; top: 10px; right: 10px; z-index: 2000; }
+
+/* Toast / notification container (bottom-right) */
+.toast-container.br { position: fixed; right: 12px; bottom: 12px; z-index: 1200; }
+.toast-container.br .toast { min-width: 260px; }
+.dark-mode .toast { background-color: #0b1220; color: #e6eef8; border-color:#213040; }
+
+/* Dashboard specific styles */
+.dashboard-hero {
+  padding: 2rem; border-radius: .5rem; background: linear-gradient(90deg,#0d6efd33 0%, #6f42c133 100%); color: #0b2540; margin-bottom: 1.25rem;
+}
+.dark-mode .dashboard-hero { background: linear-gradient(90deg,#1b2b3b 0%, #10222b 100%); color: #e6eef8; }
+.stat-card { border: 0; border-radius: .5rem; box-shadow: 0 6px 18px rgba(11,23,34,0.06); padding: 1rem; }
+.stat-card .stat-value { font-size: 1.75rem; font-weight: 600; }
+.stat-card .stat-label { color: #6c757d; }
+.dark-mode .stat-card { box-shadow: 0 6px 18px rgba(0,0,0,0.6); }
+.recent-table th, .recent-table td { vertical-align: middle; }
+.activity-item { padding: .6rem; border-bottom: 1px solid rgba(0,0,0,0.04); }
+.dark-mode .activity-item { border-bottom-color: rgba(255,255,255,0.04); }
+
+@media (max-width: 767px){
+  .dashboard-hero { text-align: center; }
+  .stat-card .stat-value { font-size: 1.4rem; }
+}
