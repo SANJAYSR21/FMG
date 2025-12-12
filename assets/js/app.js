@@ -73,6 +73,45 @@ $(function(){
   updateNavUser();
   enforceRoleAccess();
 
+  // Particle animation: generate moving particles when a particle layer exists (login page)
+  function initParticles(count){
+    try{
+      const container = document.getElementById('particleLayer');
+      if(!container) return;
+      // clear existing
+      container.innerHTML = '';
+      const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+      for(let i=0;i<count;i++){
+        const p = document.createElement('span');
+        p.className = 'particle';
+        // size
+        const size = Math.round(6 + Math.random()*14); // 6-20px
+        p.style.width = size + 'px';
+        p.style.height = size + 'px';
+        // vertical position
+        p.style.top = Math.round(Math.random()*100) + '%';
+        // color class
+        const cls = (Math.random()<0.6) ? 'small' : (Math.random()<0.85 ? 'med' : 'faint');
+        p.classList.add(cls);
+        // animation duration and delay
+        const dur = (8 + Math.random()*22).toFixed(2) + 's';
+        const delay = (-1 * Math.random()*20).toFixed(2) + 's';
+        p.style.animation = `particleMove ${dur} linear ${delay} infinite`;
+        // starting left offset randomized slightly negative so they enter smoothly
+        p.style.left = ( -10 - Math.random()*10 ) + 'vw';
+        // opacity variation
+        p.style.opacity = (0.2 + Math.random()*0.9).toFixed(2);
+        container.appendChild(p);
+      }
+      // regenerate on resize to keep distribution natural
+      let resizeTimer = null;
+      window.addEventListener('resize', function(){ clearTimeout(resizeTimer); resizeTimer = setTimeout(()=>{ initParticles(count); }, 350); });
+    }catch(e){ console.error('initParticles', e); }
+  }
+
+  // Initialize particles on pages that include the layer (login)
+  initParticles(36);
+
   // Demo users (username/password/role) - only these credentials work for login
   const demoUsers = [
     { username: 'admin', password: 'admin123', role: 'Admin', fullname: 'Administrator' },
@@ -136,7 +175,7 @@ $(function(){
   }
 
   // initialize contracts from storage (if present)
-  loadContractsFromStorage();
+  // NOTE: moved call further below after the `contracts` array is declared
 
   // Dark mode support: toggle and persistence
   function applyDarkMode(enabled){
@@ -191,6 +230,37 @@ $(function(){
     toast.on('hidden.bs.toast', function(){ $(this).remove(); });
   }
 
+  // reusable modal display for any contract object (global within this document-ready scope)
+  function openContractModal(c){
+    if(!c) return;
+    const html = `
+      <dl class='row'>
+        <dt class='col-sm-4'>Contract Number</dt><dd class='col-sm-8'>${c.number}</dd>
+        <dt class='col-sm-4'>Client</dt><dd class='col-sm-8'>${c.client}</dd>
+        <dt class='col-sm-4'>Start</dt><dd class='col-sm-8'>${c.start || ''}</dd>
+        <dt class='col-sm-4'>End</dt><dd class='col-sm-8'>${c.end || ''}</dd>
+        <dt class='col-sm-4'>Status</dt><dd class='col-sm-8'>${c.status || ''}</dd>
+        <dt class='col-sm-4'>Requested By</dt><dd class='col-sm-8'>${c.requestedBy || ''}</dd>
+        <dt class='col-sm-4'>Version</dt><dd class='col-sm-8'>${c.version || ''}</dd>
+        <dt class='col-sm-4'>Notes / Title</dt><dd class='col-sm-8'>${c.notes || ''}</dd>
+        <dt class='col-sm-4'>Body</dt><dd class='col-sm-8'>${c.body ? c.body : ''}</dd>
+      </dl>`;
+    $('#viewBody').html(html);
+    var modal = new bootstrap.Modal(document.getElementById('viewModal'));
+    modal.show();
+  }
+
+  // helper: strip HTML tags and collapse whitespace to produce a plain-text preview
+  function stripHtmlToText(html){
+    if(!html) return '';
+    try{
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      const txt = tmp.textContent || tmp.innerText || '';
+      return txt.replace(/\s+/g,' ').trim();
+    }catch(e){ return String(html).replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim(); }
+  }
+
   // Profile page load
   if($('#profileForm').length){
     $('#p_name').val(localStorage.getItem('fclms_user') || 'Demo User');
@@ -221,6 +291,8 @@ $(function(){
     {number:'CNT-1004', client:'BlueSea', start:'2025-02-01', end:'2026-02-01', status:'Active', version:'1.2', notes:'Includes addendum.'}
   ];
 
+  // initialize contracts from storage (if present)
+  loadContractsFromStorage();
   // Approvals dummy
   const approvals = [
     {number:'CNT-1003', client:'TransShip', submittedBy:'jdoe', submittedOn:'2025-11-20'},
@@ -261,10 +333,15 @@ $(function(){
       const actions = $(`<td class='action-btns'></td>`);
       actions.append(`<button class='btn btn-sm btn-outline-primary me-1 viewBtn' data-idx='${idx}'>View</button>`);
       actions.append(`<button class='btn btn-sm btn-outline-secondary me-1 editBtn' data-idx='${idx}'>Edit</button>`);
-      // if this is a Requested item and current user is Admin, offer Publish
       const role = localStorage.getItem('fclms_role') || '';
-      if(c.status === 'Requested' && role === 'Admin'){
-        actions.append(`<button class='btn btn-sm btn-success me-1 publishBtn' data-idx='${idx}'>Publish</button>`);
+      // Admin actions depending on workflow status
+      if(role === 'Admin'){
+        if(c.status === 'Requested'){
+          actions.append(`<button class='btn btn-sm btn-warning me-1 sendOpsBtn' data-idx='${idx}'>Send to Operations</button>`);
+        }
+        if(c.status === 'PendingPublish'){
+          actions.append(`<button class='btn btn-sm btn-success me-1 publishBtn' data-idx='${idx}'>Publish</button>`);
+        }
       }
       actions.append(`<button class='btn btn-sm btn-outline-danger deleteBtn' data-idx='${idx}'>Delete</button>`);
       tr.append(actions);
@@ -333,36 +410,39 @@ $(function(){
     });
 
     // View
+    // existing viewBtn (from contracts table) uses index; reuse modal helper
     $(document).on('click', '.viewBtn', function(){
       const idx = $(this).data('idx');
       const c = contracts[idx];
-      const html = `
-        <dl class='row'>
-          <dt class='col-sm-4'>Contract Number</dt><dd class='col-sm-8'>${c.number}</dd>
-          <dt class='col-sm-4'>Client</dt><dd class='col-sm-8'>${c.client}</dd>
-          <dt class='col-sm-4'>Start</dt><dd class='col-sm-8'>${c.start}</dd>
-          <dt class='col-sm-4'>End</dt><dd class='col-sm-8'>${c.end}</dd>
-          <dt class='col-sm-4'>Status</dt><dd class='col-sm-8'>${c.status}</dd>
-          <dt class='col-sm-4'>Requested By</dt><dd class='col-sm-8'>${c.requestedBy || ''}</dd>
-          <dt class='col-sm-4'>Version</dt><dd class='col-sm-8'>${c.version}</dd>
-          <dt class='col-sm-4'>Notes</dt><dd class='col-sm-8'>${c.notes}</dd>
-        </dl>`;
-      $('#viewBody').html(html);
-      var modal = new bootstrap.Modal(document.getElementById('viewModal'));
-      modal.show();
+      openContractModal(c);
     });
 
     // Publish requested contract (Admin action)
+    // Admin: send a Requested contract to Operations
+    $(document).on('click', '.sendOpsBtn', function(){
+      const idx = $(this).data('idx');
+      const c = contracts[idx];
+      if(!c) return;
+      if(!confirm('Send this requested contract to Operations for drafting?')) return;
+      c.status = 'ForOperations';
+      c.assignedTo = 'Operations';
+      saveContractsToStorage();
+      renderContracts($('#contractSearch').val());
+      compliance.push({ date: new Date().toISOString().slice(0,10), user: localStorage.getItem('fclms_user') || '', action: 'Sent ' + c.number + ' to Operations', details: 'Awaiting draft' });
+      showToast('Sent to Operations', 'success');
+    });
+
+    // Admin: publish final contract (after Legal approval)
     $(document).on('click', '.publishBtn', function(){
       const idx = $(this).data('idx');
       const c = contracts[idx];
       if(!c) return;
-      if(!confirm('Publish this requested contract?')) return;
+      if(!confirm('Publish this contract to Active status?')) return;
       c.status = 'Active';
-      // bump version if empty
       if(!c.version) c.version = '1.0';
       saveContractsToStorage();
       renderContracts($('#contractSearch').val());
+      compliance.push({ date: new Date().toISOString().slice(0,10), user: localStorage.getItem('fclms_user') || '', action: 'Published ' + c.number, details: 'Contract active' });
       showToast('Contract published', 'success');
     });
 
@@ -412,6 +492,10 @@ $(function(){
         requestedBy: userid
       };
       contracts.push(req);
+      // persist so Admin (or other roles) can see the request
+      saveContractsToStorage();
+      // re-render contracts table on this page (if visible)
+      if($('#contractsTable').length){ renderContracts($('#contractSearch').val()); }
       showToast('Contract request submitted', 'success');
       // clear form
       $('#requestForm')[0].reset();
@@ -459,24 +543,37 @@ $(function(){
     function renderDraftsList(){
       const list = $('#draftsList').empty();
       const user = localStorage.getItem('fclms_user') || '';
-      contracts.filter(c => c.status === 'Draft' && (c.requestedBy === user || user === 'admin')).forEach((d, idx)=>{
-        const item = $(`<button class='list-group-item list-group-item-action d-flex justify-content-between align-items-start' data-idx='${idx}'>
-          <div>
-            <div class='fw-bold'>${d.number}</div>
-            <div class='small text-muted'>${d.client} — ${d.title || ''}</div>
-          </div>
-          <div><span class='badge badge-status-Draft'>Draft</span></div>
-        </button>`);
-        item.on('click', function(){
-          const i = $(this).data('idx');
-          const draft = contracts.filter(c=>c.status==='Draft')[i];
+      // include items that are Draft or assigned ForOperations so Ops can pick them up
+      const role = localStorage.getItem('fclms_role') || '';
+      const items = contracts.filter(c => {
+        // Show drafts belonging to user, or admin sees all, or Operations sees items assigned to Operations
+        const isDraftOrForOps = (c.status === 'Draft' || c.status === 'ForOperations');
+        const belongsToUser = (c.requestedBy === user);
+        const assignedToOps = (c.status === 'ForOperations' && (c.assignedTo === 'Operations' || role === 'Operations'));
+        return isDraftOrForOps && (belongsToUser || user === 'admin' || assignedToOps);
+      });
+      items.forEach((d, idx)=>{
+        const item = $(`<div class='list-group-item list-group-item-action d-flex justify-content-between align-items-start' data-number='${d.number}'>
+            <div>
+              <div class='fw-bold'>${d.number}</div>
+              <div class='small text-muted'>${d.client} — ${d.notes || ''}</div>
+            </div>
+            <div class='d-flex align-items-center'>
+              <button class='btn btn-sm btn-outline-primary me-2 viewDraftBtn' data-number='${d.number}'>View</button>
+              <span><span class='badge badge-status-${d.status}'>${d.status}</span></span>
+            </div>
+          </div>`);
+        item.on('click', function(e){
+          // clicking the list item loads draft into editor (unless a child button handled it)
+          const number = $(this).data('number');
+          const draft = contracts.find(c=>c.number === number && (c.status === 'Draft' || c.status === 'ForOperations'));
           if(draft){
             $('#d_number').val(draft.number);
             $('#d_client').val(draft.client);
             $('#d_start').val(draft.start);
             $('#d_end').val(draft.end);
             $('#d_version').val(draft.version);
-            $('#d_title').val(draft.title || '');
+            $('#d_title').val(draft.notes || '');
             $('#draftBody').html(draft.body || draft.notes || '');
             showToast('Draft loaded', 'info');
           }
@@ -484,6 +581,14 @@ $(function(){
         list.append(item);
       });
     }
+
+      // View draft from list (don't trigger parent click)
+      $(document).on('click', '.viewDraftBtn', function(e){
+        e.stopPropagation();
+        const number = $(this).data('number');
+        const c = contracts.find(x => x.number === number);
+        if(c) openContractModal(c);
+      });
 
     renderDraftsList();
 
@@ -511,7 +616,7 @@ $(function(){
     });
 
     // Send to Admin - set status to Requested so admin can view in Contract Management
-    $('#sendToAdmin').on('click', function(e){
+    $('#sendToLegal').on('click', function(e){
       e.preventDefault();
       var modal = new bootstrap.Modal(document.getElementById('confirmSendModal'));
       modal.show();
@@ -523,16 +628,17 @@ $(function(){
       const title = $('#d_title').val();
       const body = $('#draftBody').html();
       if(!client || !title){ showToast('Client and Title are required', 'warning'); return; }
-      const req = { number, client, start: $('#d_start').val(), end: $('#d_end').val(), status: 'Requested', version: $('#d_version').val(), notes: title, body: body, requestedBy: localStorage.getItem('fclms_user') || '' };
+      // mark as submitted to Legal
+      const req = { number, client, start: $('#d_start').val(), end: $('#d_end').val(), status: 'SubmittedToLegal', version: $('#d_version').val(), notes: title, body: body, requestedBy: localStorage.getItem('fclms_user') || '', assignedTo: 'Legal' };
       // remove any existing draft with same number
-      for(let i = contracts.length -1; i>=0; i--){ if(contracts[i].number === number && contracts[i].status === 'Draft') contracts.splice(i,1); }
+      for(let i = contracts.length -1; i>=0; i--){ if(contracts[i].number === number && (contracts[i].status === 'Draft' || contracts[i].status === 'ForOperations')) contracts.splice(i,1); }
       contracts.push(req);
       // persist full contracts list
       saveContractsToStorage();
       renderDraftsList();
       renderContracts($('#contractSearch').val());
-      compliance.push({ date: new Date().toISOString().slice(0,10), user: localStorage.getItem('fclms_user') || '', action: 'Sent draft ' + number + ' to admin', details: title });
-      showToast('Draft sent to Admin', 'success');
+      compliance.push({ date: new Date().toISOString().slice(0,10), user: localStorage.getItem('fclms_user') || '', action: 'Submitted ' + number + ' to Legal', details: title });
+      showToast('Draft submitted to Legal', 'success');
       bootstrap.Modal.getInstance(document.getElementById('confirmSendModal')).hide();
     });
 
@@ -541,12 +647,51 @@ $(function(){
       e.preventDefault();
       const number = $('#d_number').val() || ('DRAFT-' + Date.now());
       const title = $('#d_title').val() || number;
-      const body = $('#draftBody').html();
-      const html = `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title></head><body><h1>${title}</h1>${body}</body></html>`;
+      const bodyHtml = $('#draftBody').html();
+      const bodyText = $('<div>').html(bodyHtml).text();
+      // Try to export as PDF using jsPDF if available
+      try{
+        if(window.jspdf && window.jspdf.jsPDF){
+          const { jsPDF } = window.jspdf;
+          const doc = new jsPDF({unit: 'pt', format: 'a4'});
+          const pageWidth = doc.internal.pageSize.getWidth();
+          const margin = 40;
+          let y = 40;
+          doc.setFontSize(16);
+          doc.text(title, margin, y);
+          y += 24;
+          doc.setFontSize(11);
+          const lines = doc.splitTextToSize(bodyText, pageWidth - margin * 2);
+          doc.text(lines, margin, y);
+          doc.save(number + '.pdf');
+          showToast('Draft exported as PDF', 'info');
+          return;
+        } else if(window.jsPDF){
+          const doc = new window.jsPDF('p','pt','a4');
+          const pageWidth = doc.internal.pageSize.getWidth();
+          const margin = 40;
+          let y = 40;
+          doc.setFontSize(16);
+          doc.text(title, margin, y);
+          y += 24;
+          doc.setFontSize(11);
+          const lines = doc.splitTextToSize(bodyText, pageWidth - margin * 2);
+          doc.text(lines, margin, y);
+          doc.save(number + '.pdf');
+          showToast('Draft exported as PDF', 'info');
+          return;
+        }
+      }catch(err){
+        console.error('PDF export failed', err);
+        showToast('PDF export failed, falling back to HTML export', 'warning');
+      }
+
+      // Fallback: export as HTML file (original behavior)
+      const html = `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title></head><body><h1>${title}</h1>${bodyHtml}</body></html>`;
       const blob = new Blob([html], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url; a.download = number + '.html'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-      showToast('Draft exported', 'info');
+      showToast('Draft exported (HTML)', 'info');
     });
   }
 
@@ -554,38 +699,60 @@ $(function(){
   if($('#approvalsTable').length){
     function renderApprovals(){
       const tbody = $('#approvalsTable tbody').empty();
-      approvals.forEach((a, idx)=>{
+      // Use contracts submitted to Legal as the source of approvals
+      const items = contracts.filter(c => c.status === 'SubmittedToLegal');
+      items.forEach((a, idx)=>{
         const tr = $('<tr>');
         tr.append($('<td>').text(a.number));
         tr.append($('<td>').text(a.client));
-        tr.append($('<td>').text(a.submittedBy));
-        tr.append($('<td>').text(a.submittedOn));
+        tr.append($('<td>').text(a.requestedBy || ''));
+        tr.append($('<td>').text(a.start || ''));
+        // show a short description/notes so Legal can see the document content inline
+        const fullText = stripHtmlToText(a.body || a.notes || '');
+        const preview = fullText.length > 120 ? (fullText.slice(0,120) + '...') : fullText;
+        const descTd = $(`<td title="${(fullText || '')}"></td>`).text(preview);
+        tr.append(descTd);
         const actions = $('<td>');
-        actions.append(`<button class='btn btn-sm btn-success me-1 approveBtn' data-idx='${idx}'>Approve</button>`);
-        actions.append(`<button class='btn btn-sm btn-outline-danger rejectBtn' data-idx='${idx}'>Reject</button>`);
+        actions.append(`<button class='btn btn-sm btn-outline-primary me-1 viewApprovalBtn' data-number='${a.number}'>View</button>`);
+        actions.append(`<button class='btn btn-sm btn-success me-1 legalApproveBtn' data-number='${a.number}'>Approve</button>`);
+        actions.append(`<button class='btn btn-sm btn-outline-danger legalRejectBtn' data-number='${a.number}'>Reject</button>`);
         tr.append(actions);
         tbody.append(tr);
       });
     }
     renderApprovals();
 
-    $(document).on('click', '.approveBtn', function(){
-      const idx = $(this).data('idx');
-      const item = approvals.splice(idx,1)[0];
-      showToast('Approved ' + item.number, 'success');
-      // mark matching contract as Active if exists
-      const cidx = contracts.findIndex(c => c.number === item.number);
-      if(cidx >= 0){ contracts[cidx].status = 'Active'; saveContractsToStorage(); }
+    // Legal approves and moves contract to PendingPublish so Admin can publish
+    $(document).on('click', '.legalApproveBtn', function(){
+      const number = $(this).data('number');
+      const cidx = contracts.findIndex(c => c.number === number);
+      if(cidx < 0) return;
+      if(!confirm('Approve this contract and move to Admin for publishing?')) return;
+      contracts[cidx].status = 'PendingPublish';
+      saveContractsToStorage();
+      compliance.push({ date: new Date().toISOString().slice(0,10), user: localStorage.getItem('fclms_user') || '', action: 'Legal approved ' + number, details: 'Ready for publish' });
       renderApprovals();
+      renderContracts($('#contractSearch').val());
+      showToast('Approved and sent to Admin', 'success');
     });
-    $(document).on('click', '.rejectBtn', function(){
-      const idx = $(this).data('idx');
-      const item = approvals.splice(idx,1)[0];
-      showToast('Rejected ' + item.number, 'danger');
-      // mark matching contract as Rejected (or keep as Pending) — set to Expired for demo
-      const cidx = contracts.findIndex(c => c.number === item.number);
-      if(cidx >= 0){ contracts[cidx].status = 'Expired'; saveContractsToStorage(); }
+
+    $(document).on('click', '.legalRejectBtn', function(){
+      const number = $(this).data('number');
+      const cidx = contracts.findIndex(c => c.number === number);
+      if(cidx < 0) return;
+      if(!confirm('Reject this contract?')) return;
+      contracts[cidx].status = 'Expired';
+      saveContractsToStorage();
+      compliance.push({ date: new Date().toISOString().slice(0,10), user: localStorage.getItem('fclms_user') || '', action: 'Legal rejected ' + number, details: '' });
       renderApprovals();
+      renderContracts($('#contractSearch').val());
+      showToast('Contract rejected', 'danger');
+    });
+    // view from approvals list
+    $(document).on('click', '.viewApprovalBtn', function(){
+      const number = $(this).data('number');
+      const c = contracts.find(x => x.number === number);
+      if(c) openContractModal(c);
     });
   }
 

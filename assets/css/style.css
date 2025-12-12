@@ -16,6 +16,64 @@ main { flex: 1 0 auto; }
   background: radial-gradient(1200px 400px at 10% 20%, rgba(99,102,241,0.12), transparent),
               linear-gradient(135deg, #eef2ff 0%, #e6f4ff 50%, #ffffff 100%);
 }
+
+/* make room for animated background elements */
+.login-bg { position: relative; overflow: hidden; }
+
+.bg-anim { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+.bg-anim .blob { position: absolute; border-radius: 50%; filter: blur(28px); opacity: 0.85; transform: translate3d(0,0,0); will-change: transform, opacity; }
+.bg-anim .blob1 { width: 320px; height: 320px; left: -8%; top: -10%; background: radial-gradient(circle at 30% 30%, rgba(111,66,203,0.95), rgba(13,110,253,0.6)); animation: float1 12s ease-in-out infinite; }
+.bg-anim .blob2 { width: 260px; height: 260px; right: -6%; top: 10%; background: radial-gradient(circle at 20% 20%, rgba(6,182,212,0.85), rgba(99,102,241,0.5)); animation: float2 16s ease-in-out infinite; }
+.bg-anim .blob3 { width: 420px; height: 420px; left: 20%; bottom: -18%; background: radial-gradient(circle at 40% 40%, rgba(13,110,253,0.9), rgba(111,66,203,0.55)); animation: float3 20s ease-in-out infinite; }
+
+.login-card { position: relative; z-index: 3; }
+
+/* Particle layer: small moving particles across full width */
+.particle-layer { position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+.particle-layer .particle { position: absolute; border-radius: 50%; opacity: 0.9; transform: translate3d(0,0,0); will-change: transform, opacity; }
+.particle-layer .particle.small { background: rgba(255,255,255,0.85); }
+.particle-layer .particle.med { background: rgba(255,255,255,0.6); }
+.particle-layer .particle.faint { background: rgba(99,102,241,0.18); }
+
+@keyframes particleMove {
+  0% { transform: translateX(-10vw) translateY(0) scale(1); opacity: 0; }
+  5% { opacity: 0.7; }
+  50% { transform: translateX(50vw) translateY(6px) scale(1.05); }
+  95% { opacity: 0.7; }
+  100% { transform: translateX(110vw) translateY(0) scale(1); opacity: 0; }
+}
+
+/* prefers-reduced-motion: disable animations */
+@media (prefers-reduced-motion: reduce) {
+  .particle-layer .particle { animation: none !important; opacity: .6 !important; }
+  .bg-anim .blob { animation: none !important; }
+  .login-bg::before { animation: none !important; }
+}
+
+@keyframes float1 {
+  0% { transform: translateY(0) scale(1); opacity: .9; }
+  50% { transform: translateY(18px) scale(1.05); opacity: .8; }
+  100% { transform: translateY(0) scale(1); opacity: .9; }
+}
+@keyframes float2 {
+  0% { transform: translateY(0) scale(1); opacity: .85; }
+  50% { transform: translateY(-22px) scale(1.06); opacity: .75; }
+  100% { transform: translateY(0) scale(1); opacity: .85; }
+}
+@keyframes float3 {
+  0% { transform: translateY(0) scale(1); opacity: .88; }
+  50% { transform: translateY(28px) scale(1.04); opacity: .78; }
+  100% { transform: translateY(0) scale(1); opacity: .88; }
+}
+
+/* subtle moving gradient overlay to add depth */
+.login-bg::before{
+  content: '';
+  position: absolute; inset:0; z-index:1; pointer-events:none;
+  background: linear-gradient(120deg, rgba(255,255,255,0.05), rgba(0,0,0,0.02));
+  mix-blend-mode: overlay; opacity: .9; animation: bgShift 18s linear infinite;
+}
+@keyframes bgShift{ 0%{ transform: translateX(0);} 50%{ transform: translateX(6%);} 100%{ transform: translateX(0);} }
 .dark-mode .login-bg {
   background: radial-gradient(1200px 400px at 10% 20%, rgba(16,24,40,0.4), transparent),
               linear-gradient(135deg, #07101a 0%, #081826 50%, #07101a 100%);

@@ -66,9 +66,9 @@
                 <div class="border p-2" id="draftBody" contenteditable="true" style="min-height:180px;background:#fff"></div>
               </div>
 
-              <div class="d-flex gap-2">
+                <div class="d-flex gap-2">
                 <button class="btn btn-primary" id="saveDraft">Save Draft</button>
-                <button class="btn btn-outline-secondary" id="sendToAdmin" type="button">Send to Admin</button>
+                <button class="btn btn-outline-secondary" id="sendToLegal" type="button">Send to Legal</button>
                 <button class="btn btn-outline-info" id="exportDraft" type="button">Export Draft</button>
                 <button class="btn btn-outline-secondary ms-auto" type="reset">Reset</button>
               </div>
@@ -126,7 +126,7 @@
         <div class="modal-header"><h5 class="modal-title">Confirm Send</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body">Are you sure you want to send this draft to Admin for review? This will mark it as <strong>Requested</strong>.</div>
+        <div class="modal-body">Are you sure you want to send this draft to Legal for review? This will mark it as <strong>Submitted to Legal</strong>.</div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
           <button type="button" id="confirmSendBtn" class="btn btn-primary">Yes, send</button>
@@ -137,6 +137,8 @@
 
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- jsPDF (used to export Drafts as PDF) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="assets/js/app.js"></script>
 </body>
 </html>
